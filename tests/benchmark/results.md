@@ -58,3 +58,41 @@ For Machine types: n2-standard-4
 |imdb/title_ratings_10mb.csv                |10MB | 5.558414           |
 |stackoverflow/stackoverflow_posts_1g.ndjson|1GB  | 85.409014          |
 |trimmed/pypi/*                             |5GB  | 48.973093          |
+
+
+## Performance evaluation of loading datasets from GCS with Astro Python SDK 0.11.0 into Snowflake
+
+### Without native support
+
+Astro Python SDK 0.11.0 only support loading to Snowflake using Pandas, without any further optimizations.
+
+The benchmark was run as a Kubernetes job in GKE:
+
+* Version: `astro-sdk-python` 0.11.0 (`36a3042`)
+* Machine type: `n2-standard-4`
+  * vCPU: 4
+  * Memory: 16 GB RAM
+* Container resource limit:
+  * Memory: 10 Gi
+
+
+| database   | dataset    | total_time   | memory_rss   | cpu_time_user   | cpu_time_system   |
+|:-----------|:-----------|:-------------|:-------------|:----------------|:------------------|
+| snowflake  | ten_kb     | 4.75s        | 59.3MB       | 1.45s           | 100.0ms           |
+| snowflake  | hundred_kb | 4.7s         | 54.96MB      | 1.42s           | 90.0ms            |
+| snowflake  | ten_mb     | 10.4s        | 65.4MB       | 2.27s           | 240.0ms           |
+| snowflake  | one_gb     | 4.96min      | 57.3MB       | 14.21s          | 1.16s             |
+| snowflake  | five_gb    | 24.46min     | 97.85MB      | 1.43min         | 5.94s             |
+| snowflake  | ten_gb     | 50.85min     | 104.53MB     | 2.7min          | 12.11s            |
+
+### Database: postgres
+
+| database                | dataset    | total_time   | memory_rss   | cpu_time_user   | cpu_time_system   |
+|:------------------------|:-----------|:-------------|:-------------|:----------------|:------------------|
+| postgres_conn_benchmark | few_kb     | 494.42ms     | 36.06MB      | 570.0ms         | 50.0ms            |
+| postgres_conn_benchmark | ten_kb     | 689.05ms     | 42.96MB      | 540.0ms         | 40.0ms            |
+| postgres_conn_benchmark | hundred_kb | 580.7ms      | 36.43MB      | 570.0ms         | 50.0ms            |
+| postgres_conn_benchmark | ten_mb     | 44.67s       | 1.38GB       | 31.03s          | 4.03s             |
+| postgres_conn_benchmark | one_gb     | 5.56min      | 62.5MB       | 14.07s          | 1.14s             |
+| postgres_conn_benchmark | five_gb    | 24.44min     | 78.15MB      | 1.34min         | 5.73s             |
+| postgres_conn_benchmark | ten_gb     | 45.64min     | 61.71MB      | 2.37min         | 11.48s            |
